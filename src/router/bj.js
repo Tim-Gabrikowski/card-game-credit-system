@@ -176,6 +176,7 @@ function onMasterSocketRequest(mKey, msg, callback) {
 				msg: "PL_LST",
 				payload: GAMES[gi].players[pi],
 			});
+			callback(formSocResponse(MESSAGES.status.OK, GAMES[gi]));
 			break;
 		case MESSAGES.master.PLAYER_WON_RESULT:
 			pKey = req.payload.pKey;
@@ -188,6 +189,7 @@ function onMasterSocketRequest(mKey, msg, callback) {
 				msg: "PL_WON",
 				payload: GAMES[gi].players[pi],
 			});
+			callback(formSocResponse(MESSAGES.status.OK, GAMES[gi]));
 			break;
 		default:
 			callback(
