@@ -6,21 +6,28 @@ const router = Router();
 const MESSAGES = {
 	master: {
 		GET_STATE: "MT_GTS",
+		PLAYER_LOST_RESULT: "MT_PLR",
+		PLAYER_WON_RESULT: "MT_PLW",
 	},
 	observer: {},
 	player: {
-		GET_STATE: "PL_GTS",
+		POST_BET: "PL_BET",
+		LOST: "PL_LST",
+		WON: "PL_WON",
 	},
 	errors: {
 		GAME_NOT_FOUND: "ERR_GNF",
 		PLAYER_NOT_FOUND: "ERR_PNF",
 		CLIEND_FAIL: "ERR_CFR",
 		UNKNOWN_ACTION: "ERR_NVA",
+		PL_NE_MONEY: "ERR_PNEM",
+		PL_LOW_BET: "ERR_PTLB",
 	},
 	status: {
-		OK: "OK",
+		OK: "OKAY",
 		FAIL: "FAIL",
 		DONE: "DONE",
+		BRDC: "BRDC",
 	},
 };
 
@@ -28,6 +35,7 @@ import expressWs from "express-ws";
 expressWs(router);
 
 let GAMES = [];
+let SOCKETS = [];
 
 router.post("/new-game", (req, res) => {
 	console.log(req.body);
@@ -39,11 +47,9 @@ router.post("/new-game", (req, res) => {
 		startMoney: startMoney,
 		master: {
 			key: randomBytes(8).toString("hex"),
-			socket: null,
 		},
 		observer: {
 			key: randomBytes(8).toString("hex"),
-			socket: null,
 		},
 		players: [],
 	};
@@ -64,7 +70,6 @@ router.post("/join/:key", (req, res) => {
 	let player = {
 		key: randomBytes(4).toString("hex"),
 		name: req.body.name || "Player #" + (GAMES[gi].players.length + 1),
-		socket: null,
 		balance: GAMES[gi].startMoney,
 		currBet: 0,
 	};
@@ -100,9 +105,9 @@ router.ws("/player/:gkey/:pkey", (soc, req) => {
 		);
 	}
 	soc.send(formSocResponse(MESSAGES.status.OK, GAMES[gi].players[pi]));
-	GAMES[gi].players[pi].socket = soc;
+	SOCKETS.push({ gKey: gKey, socket: soc, type: "PLAYER", pKey: pKey });
 	soc.on("message", (msg) => {
-		onMasterSocketRequest(mKey, msg, (cb_msg) => {
+		onPlayerSocketRequest(pKey, gKey, msg, (cb_msg) => {
 			soc.send(cb_msg);
 		});
 	});
@@ -124,7 +129,12 @@ router.ws("/master/:key", (soc, req) => {
 	}
 
 	soc.send(formSocResponse(MESSAGES.status.OK, GAMES[gi]));
-	GAMES[gi].master.socket = soc;
+	SOCKETS.push({
+		gKey: GAMES[gi].key,
+		socket: soc,
+		type: "MASTER",
+		mKey: mKey,
+	});
 	soc.on("message", (msg) => {
 		onMasterSocketRequest(mKey, msg, (cb_msg) => {
 			soc.send(cb_msg);
@@ -151,10 +161,33 @@ function onMasterSocketRequest(mKey, msg, callback) {
 	}
 
 	let gi = GAMES.findIndex((g) => g.master.key == mKey);
+	let pi, pKey;
 
 	switch (req.action) {
 		case MESSAGES.master.GET_STATE:
 			callback(formSocResponse(MESSAGES.status.OK, GAMES[gi]));
+			break;
+		case MESSAGES.master.PLAYER_LOST_RESULT:
+			pKey = req.payload.pKey;
+			pi = GAMES[gi].players.findIndex((p) => p.key == pKey);
+			GAMES[gi].players[pi].currBet = 0;
+			socketSendPlayer(gKey, pKey, {
+				type: "ACTION",
+				msg: "PL_LST",
+				payload: GAMES[gi].players[pi],
+			});
+			break;
+		case MESSAGES.master.PLAYER_WON_RESULT:
+			pKey = req.payload.pKey;
+			pi = GAMES[gi].players.findIndex((p) => p.key == pKey);
+
+			GAMES[gi].players[pi].currBet +=
+				GAMES[gi].players[pi].currBet * req.payload.multiplier;
+			socketSendPlayer(gKey, pKey, {
+				type: "ACTION",
+				msg: "PL_WON",
+				payload: GAMES[gi].players[pi],
+			});
 			break;
 		default:
 			callback(
@@ -188,8 +221,35 @@ function onPlayerSocketRequest(pKey, gKey, msg, callback) {
 	let pi = GAMES[gi].players.findIndex((p) => p.key == pKey);
 
 	switch (req.action) {
-		case MESSAGES.player.GET_STATE:
-			callback(formSocResponse(MESSAGES.status.OK, GAMES[gi]));
+		case MESSAGES.player.POST_BET:
+			if (GAMES[gi].players[pi].balance < req.payload.bet) {
+				return callback(
+					formSocResponse(
+						MESSAGES.status.FAIL,
+						{},
+						MESSAGES.errors.PL_NE_MONEY
+					)
+				);
+			}
+			if (req.payload.bet < GAMES[gi].minBet) {
+				return callback(
+					formSocResponse(
+						MESSAGES.status.FAIL,
+						{},
+						MESSAGES.errors.PL_LOW_BET
+					)
+				);
+			}
+			GAMES[gi].players[pi].currBet = req.payload.bet;
+			GAMES[gi].players[pi].balance -= req.payload.bet;
+			socketSendMaster(gKey, {
+				type: "ACTION",
+				msg: "PL_BET",
+				payload: { pKey: pKey, bet: req.payload.bet },
+			});
+			callback(
+				formSocResponse(MESSAGES.status.OK, GAMES[gi].players[pi])
+			);
 			break;
 		default:
 			callback(
@@ -209,4 +269,16 @@ function formSocResponse(status, payload, error) {
 		error,
 		payload,
 	});
+}
+
+function socketSendMaster(gKey, payload) {
+	let si = SOCKETS.findIndex((s) => s.gKey == gKey && s.type == "MASTER");
+	SOCKETS[si].socket.send(formSocResponse(MESSAGES.status.BRDC, payload));
+}
+
+function socketSendPlayer(gKey, pKey, payload) {
+	let si = SOCKETS.findIndex(
+		(s) => s.gKey == gKey && s.type == "PLAYER" && pKey == pKey
+	);
+	SOCKETS[si].socket.send(formSocResponse(MESSAGES.status.BRDC, payload));
 }
