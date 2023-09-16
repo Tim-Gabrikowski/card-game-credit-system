@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Player | Blackjack credit system</title>
+		<link rel="stylesheet" href="./style.css" />
+	</head>
+	<body>
+		<div class="column">
+			<div id="joinGameCont" class="container">
+				<h1 class="mt-10">Create Game</h1>
+				<input
+					type="text"
+					placeholder="Game Key"
+					style="width: 300px"
+					id="gameKeyInput"
+				/><br />
+				<input
+					type="text"
+					placeholder="Name"
+					style="width: 300px"
+					id="nameInput"
+				/><br />
+				<button style="width: 300px; margin: 5px" id="joinGameButton">
+					Join Game
+				</button>
+			</div>
+			<div id="gameInfoCont" class="container">
+				<h1 class="mt-10 mb-20">Game Info</h1>
+				<div class="fields_cont">
+					<div class="player" style="padding: 5px">
+						<h2>Player Key</h2>
+						<h2 id="playerKey">---</h2>
+					</div>
+					<div class="player" style="padding: 5px">
+						<h2>Name</h2>
+						<h2 id="playerName">---</h2>
+					</div>
+					<div class="player" style="padding: 5px">
+						<h2>Minimal Bet</h2>
+						<h2 id="minBet">---</h2>
+					</div>
+					<div class="player" style="padding: 5px">
+						<h2>Balance</h2>
+						<h2 id="balance">---</h2>
+					</div>
+					<div class="player" style="padding: 5px">
+						<h2>Current Bet</h2>
+						<h2 id="currBet">---</h2>
+					</div>
+					<div class="player" style="padding: 5px">
+						<h2>Last Result</h2>
+						<h2 id="lastRes">---</h2>
+					</div>
+				</div>
+			</div>
+
+			<div id="betCont" class="container">
+				<h2 class="mt-10 mb-20">Place Bet</h2>
+				<div id="betInp">
+					<input
+						type="number"
+						id="betInput"
+						placeholder="Your Bet"
+						value=""
+						style="width: 300px; margin: 5px"
+					/><br />
+					<button
+						style="width: 300px; margin: 5px"
+						id="placeBetButton"
+					>
+						Place bet
+					</button>
+				</div>
+				<h1 id="betDisp">---</h1>
+			</div>
+		</div>
+	</body>
+	<script src="./script.js"></script>
+</html>

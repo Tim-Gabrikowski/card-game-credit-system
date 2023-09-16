@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Master | Blackjack credit system</title>
+		<link rel="stylesheet" href="./style.css" />
+	</head>
+	<body>
+		<div class="column">
+			<div id="createGameCont" class="container">
+				<h1 class="mt-10">Create Game</h1>
+				<input
+					type="number"
+					placeholder="Start money"
+					value="100000"
+					style="width: 300px"
+					id="startMoneyInput"
+				/><br />
+				<input
+					type="number"
+					placeholder="minimum Bet"
+					value="100"
+					style="width: 300px"
+					id="minBetInput"
+				/><br />
+				<button style="width: 300px; margin: 5px" id="createGameButton">
+					Create Game
+				</button>
+			</div>
+			<div id="gameInfoCont" class="container">
+				<h1 class="mt-10 mb-20">Game Info</h1>
+				<div class="fields_cont">
+					<div class="player" style="padding: 5px">
+						<p>Game Key</h2>
+						<p id="gameKey">---</p>
+					</div>
+					<div class="player" style="padding: 5px">
+						<p>Minimal Bet</p>
+						<p id="minBet">---</p>
+					</div>
+					<div class="player" style="padding: 5px">
+						<p>Starting Money</p>
+						<p id="startMoney">---</p>
+					</div>
+					<div class="player" style="padding: 5px">
+						<p>Current Players</p>
+						<p id="playerCount">---</p>
+					</div>
+				</div>
+			</div>
+
+			<div id="playerListCont" class="container">
+				<h2 class="mt-10 mb-20">Players</h2>
+				<div class="fields_cont" id="playerList">
+					<div class="player">
+						<h2>No player yet</h2>
+					</div>
+				</div>
+			</div>
+		</div>
+	</body>
+	<script src="./script.js"></script>
+</html>

@@ -1,13 +1,18 @@
-import { Router } from "express";
+import { Router, static as static_ } from "express";
 import { randomBytes } from "crypto";
+
+import path, { dirname } from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const router = Router();
 
 const MESSAGES = {
 	master: {
 		GET_STATE: "MT_GTS",
-		PLAYER_LOST_RESULT: "MT_PLR",
-		PLAYER_WON_RESULT: "MT_PLW",
+		PLAYER_JOINED: "MT_PJT",
+		PLAYER_RESULT: "MT_PRM",
 	},
 	observer: {},
 	player: {
@@ -31,6 +36,9 @@ const MESSAGES = {
 	},
 };
 
+router.use("/master", static_(path.join(__dirname, "..", "views/bj/master")));
+router.use("/player", static_(path.join(__dirname, "..", "views/bj/player")));
+
 import expressWs from "express-ws";
 expressWs(router);
 
@@ -38,7 +46,6 @@ let GAMES = [];
 let SOCKETS = [];
 
 router.post("/new-game", (req, res) => {
-	console.log(req.body);
 	const { minBet, startMoney } = req.body;
 
 	let game = {
@@ -72,6 +79,7 @@ router.post("/join/:key", (req, res) => {
 		name: req.body.name || "Player #" + (GAMES[gi].players.length + 1),
 		balance: GAMES[gi].startMoney,
 		currBet: 0,
+		minBet: GAMES[gi].minBet,
 	};
 	GAMES[gi].players.push(player);
 
@@ -104,7 +112,19 @@ router.ws("/player/:gkey/:pkey", (soc, req) => {
 			)
 		);
 	}
-	soc.send(formSocResponse(MESSAGES.status.OK, GAMES[gi].players[pi]));
+
+	soc.send(
+		formSocResponse(MESSAGES.status.OK, {
+			type: "UPDATE",
+			msg: "GAME_STATE",
+			payload: GAMES[gi].players[pi],
+		})
+	);
+	socketSendMaster(gKey, {
+		type: "ACTION",
+		msg: MESSAGES.master.PLAYER_JOINED,
+		payload: GAMES[gi].players[pi],
+	});
 	SOCKETS.push({ gKey: gKey, socket: soc, type: "PLAYER", pKey: pKey });
 	soc.on("message", (msg) => {
 		onPlayerSocketRequest(pKey, gKey, msg, (cb_msg) => {
@@ -128,7 +148,13 @@ router.ws("/master/:key", (soc, req) => {
 		);
 	}
 
-	soc.send(formSocResponse(MESSAGES.status.OK, GAMES[gi]));
+	soc.send(
+		formSocResponse(MESSAGES.status.OK, {
+			type: "UPDATE",
+			msg: "GAME_STATE",
+			payload: GAMES[gi],
+		})
+	);
 	SOCKETS.push({
 		gKey: GAMES[gi].key,
 		socket: soc,
@@ -165,31 +191,40 @@ function onMasterSocketRequest(mKey, msg, callback) {
 
 	switch (req.action) {
 		case MESSAGES.master.GET_STATE:
-			callback(formSocResponse(MESSAGES.status.OK, GAMES[gi]));
+			callback(
+				formSocResponse(MESSAGES.status.OK, {
+					type: "UPDATE",
+					msg: "GAME_STATE",
+					payload: GAMES[gi],
+				})
+			);
 			break;
-		case MESSAGES.master.PLAYER_LOST_RESULT:
+		case MESSAGES.master.PLAYER_RESULT:
 			pKey = req.payload.pKey;
 			pi = GAMES[gi].players.findIndex((p) => p.key == pKey);
-			GAMES[gi].players[pi].currBet = 0;
-			socketSendPlayer(gKey, pKey, {
-				type: "ACTION",
-				msg: "PL_LST",
-				payload: GAMES[gi].players[pi],
-			});
-			callback(formSocResponse(MESSAGES.status.OK, GAMES[gi]));
-			break;
-		case MESSAGES.master.PLAYER_WON_RESULT:
-			pKey = req.payload.pKey;
-			pi = GAMES[gi].players.findIndex((p) => p.key == pKey);
+			let bet = GAMES[gi].players[pi].currBet;
+			let won = GAMES[gi].players[pi].currBet * req.payload.multiplier;
+			GAMES[gi].players[pi].balance += won;
 
-			GAMES[gi].players[pi].currBet +=
-				GAMES[gi].players[pi].currBet * req.payload.multiplier;
-			socketSendPlayer(gKey, pKey, {
+			GAMES[gi].players[pi].currBet = 0;
+
+			socketSendPlayer(GAMES[gi].key, pKey, {
 				type: "ACTION",
-				msg: "PL_WON",
-				payload: GAMES[gi].players[pi],
+				msg: "PL_RES",
+				payload: {
+					bet: bet,
+					multiplier: req.payload.multiplier,
+					won: won,
+					player: GAMES[gi].players[pi],
+				},
 			});
-			callback(formSocResponse(MESSAGES.status.OK, GAMES[gi]));
+			callback(
+				formSocResponse(MESSAGES.status.OK, {
+					type: "UPDATE",
+					msg: "GAME_STATE",
+					payload: GAMES[gi],
+				})
+			);
 			break;
 		default:
 			callback(
@@ -247,10 +282,18 @@ function onPlayerSocketRequest(pKey, gKey, msg, callback) {
 			socketSendMaster(gKey, {
 				type: "ACTION",
 				msg: "PL_BET",
-				payload: { pKey: pKey, bet: req.payload.bet },
+				payload: {
+					pKey: pKey,
+					bet: req.payload.bet,
+					balance: GAMES[gi].players[pi].balance,
+				},
 			});
 			callback(
-				formSocResponse(MESSAGES.status.OK, GAMES[gi].players[pi])
+				formSocResponse(MESSAGES.status.OK, {
+					type: "UPDATE",
+					msg: "GAME_STATE",
+					payload: GAMES[gi].players[pi],
+				})
 			);
 			break;
 		default:

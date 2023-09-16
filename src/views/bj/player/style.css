@@ -1,0 +1,120 @@
+@import url("https://fonts.googleapis.com/css2?family=Ubuntu+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap");
+body {
+	background-color: black;
+	color: white;
+	font-family: "Ubuntu Mono", monospace;
+	padding: 10px;
+	text-align: center;
+}
+
+.column {
+	display: flex;
+	flex-direction: column;
+	justify-content: baseline;
+	align-items: center;
+	text-align: center;
+}
+
+.container {
+	border: 1px solid white;
+	width: 100%;
+	max-width: 600px;
+	min-width: 400px;
+	min-height: 100px;
+	text-align: center;
+	padding: 10px;
+	margin: 5px;
+}
+
+h1,
+h2 {
+	margin: 0;
+}
+.mt-10 {
+	margin-top: 10px;
+}
+.mt-20 {
+	margin-top: 20px;
+}
+.mb-20 {
+	margin-bottom: 20px;
+}
+
+.fields_cont {
+	/* width: calc(100%); */
+	border-top: 1px solid white;
+	padding: 5px;
+	display: flex;
+	flex-direction: column;
+	/* justify-content: space-between; */
+}
+
+.player {
+	display: flex;
+	/* width: 100%; */
+	flex-direction: row;
+	justify-content: space-between;
+	align-items: center;
+	border-bottom: 1px solid white;
+
+	padding: 10px;
+}
+.btn_row {
+	display: flex;
+	flex-direction: row;
+	border-radius: 10px;
+	overflow: hidden;
+	border: 1px solid white;
+}
+
+.btn_row > * {
+	border: none;
+	border-left: 1px solid;
+}
+.btn_row > *:first-child {
+	border-left: none;
+}
+.btn_row > *:last-child {
+	border-right: none;
+}
+
+button {
+	background-color: black;
+	color: white;
+	border: 1px solid white;
+	padding: 10px;
+	width: 100%;
+	transition: 250ms;
+	font-family: "Ubuntu Mono", monospace;
+	font-size: large;
+}
+button:active,
+button:hover {
+	background-color: white;
+	color: black;
+	padding: 10px;
+	width: 100%;
+	transition: 250ms;
+}
+
+input {
+	background-color: black;
+	color: white;
+	border: 1px solid white;
+	padding: 10px;
+	margin: 5px;
+	width: clac(100% - 10px);
+	transition: 250ms;
+	font-family: "Ubuntu Mono", monospace;
+	font-size: large;
+}
+input:active {
+	background-color: black;
+	color: white;
+	padding: 10px;
+	margin: 5px;
+	width: clac(100% - 10px);
+	transition: 250ms;
+	font-family: "Ubuntu Mono", monospace;
+	font-size: large;
+}
