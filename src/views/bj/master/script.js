@@ -5,15 +5,20 @@ function elem(id) {
 elem("gameInfoCont").style.display = "none";
 elem("playerListCont").style.display = "none";
 
-let GAME_STATE = {};
+let url = location.href.split("?")[0];
+let parts = url.split("/");
+if (parts.pop() == "") parts.pop();
+const baseUrl = parts.join("/");
+const wsUrl = baseUrl.replace(/https?:/g, "ws:");
 
+let GAME_STATE = {};
 let SOCKET;
 
 async function initGame() {
 	let minBet = Number(elem("minBetInput").value);
 	let startMoney = Number(elem("startMoneyInput").value);
 
-	const response = await fetch(location.origin + "/blackjack/new-game", {
+	const response = await fetch(baseUrl + "/new-game", {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
@@ -23,9 +28,7 @@ async function initGame() {
 	let data = await response.json();
 	console.log(data);
 
-	SOCKET = new WebSocket(
-		"ws://" + location.host + "/blackjack/master/" + data.master.key
-	);
+	SOCKET = new WebSocket(wsUrl + "/master/" + data.master.key);
 
 	// WebSocket event handlers
 	SOCKET.addEventListener("open", (event) => {
@@ -75,6 +78,12 @@ elem("createGameButton").onclick = () => {
 function renderGameInfo() {
 	console.log("renderGameInfo");
 	elem("gameKey").innerText = GAME_STATE.key || "---";
+	elem("gameKey").onclick = async () => {
+		await navigator.clipboard.writeText(
+			baseUrl + "/player/?g=" + GAME_STATE.key
+		);
+		alert("Game Link copied to clipboard");
+	};
 	elem("minBet").innerText = GAME_STATE.minBet || "---";
 	elem("startMoney").innerHTML = GAME_STATE.startMoney || "---";
 	elem("playerCount").innerText = GAME_STATE.players.length || "---";

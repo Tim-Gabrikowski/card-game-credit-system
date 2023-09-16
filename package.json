@@ -6,7 +6,10 @@
 	"type": "module",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
-		"dev": "nodemon src/app.js --debug"
+		"dev": "nodemon src/app.js --debug",
+		"start": "node src/app.js",
+		"docker-build": "docker build -t registry.gitlab.com/timgabhh/docker/game-server:latest .",
+		"docker-push": "docker push registry.gitlab.com/timgabhh/docker/game-server:latest"
 	},
 	"keywords": [],
 	"author": "",

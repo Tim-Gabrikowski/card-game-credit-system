@@ -2,6 +2,16 @@ function elem(id) {
 	return document.getElementById(id);
 }
 
+let url = location.href.split("?")[0];
+let parts = url.split("/");
+if (parts.pop() == "") parts.pop();
+const baseUrl = parts.join("/");
+const wsUrl = baseUrl.replace(/https?:/g, "ws:");
+
+elem("gameKeyInput").value = new URLSearchParams(window.location.search).get(
+	"g"
+);
+
 elem("gameInfoCont").style.display = "none";
 elem("betCont").style.display = "none";
 elem("betDisp").style.display = "none";
@@ -14,27 +24,17 @@ async function joinGame() {
 	let name = elem("nameInput").value;
 	let gameKey = elem("gameKeyInput").value;
 
-	const response = await fetch(
-		location.origin + "/blackjack/join/" + gameKey,
-		{
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({ name: name }),
-		}
-	);
+	const response = await fetch(baseUrl + "/join/" + gameKey, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify({ name: name }),
+	});
 	let data = await response.json();
 	console.log(data);
 
-	SOCKET = new WebSocket(
-		"ws://" +
-			location.host +
-			"/blackjack/player/" +
-			gameKey +
-			"/" +
-			data.key
-	);
+	SOCKET = new WebSocket(wsUrl + "/player/" + gameKey + "/" + data.key);
 
 	// WebSocket event handlers
 	SOCKET.addEventListener("open", (event) => {
