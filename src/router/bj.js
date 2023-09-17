@@ -323,7 +323,7 @@ function socketSendMaster(gKey, payload) {
 
 function socketSendPlayer(gKey, pKey, payload) {
 	let si = SOCKETS.findIndex(
-		(s) => s.gKey == gKey && s.type == "PLAYER" && pKey == pKey
+		(s) => s.gKey == gKey && s.type == "PLAYER" && s.pKey == pKey
 	);
 	SOCKETS[si].socket.send(formSocResponse(MESSAGES.status.BRDC, payload));
 }
